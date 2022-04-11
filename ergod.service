@@ -1,0 +1,6 @@
+[Unit]
+Description=computer ergonomics daemon
+
+[Service]
+Type=simple
+ExecStart=.../ergod
