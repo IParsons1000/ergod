@@ -1,0 +1,42 @@
+INSTALLATION
+------------
+
+You can install with the installation script in this directory,
+install.sh or by hand.
+
+PLEASE NOTE: Installation by both methods requires gcc.
+
+INSTALLATION WITH THE SCRIPT:
+
+To install ergod with the provided installation script, execute:
+
+	sudo ./install.sh
+
+INSTALLATION BY HAND:
+
+To install by hand, first build the daemon with:
+
+	make
+
+then, copy the binary to the appropraite directory, with:
+
+	sudo mv ergod /usr/local/sbin
+
+This following step is optional if you do not have SELinux
+installed/enabled (test with the selinuxenabled command), and changes
+the file context to make it accessable by systemd:
+	
+	sudo semanage fcontext -d -t bin_t -s system_u '/usr/local/sbin/ergod'
+	sudo semanage fcontext -a -t bin_t -s system_u '/usr/local/sbin/ergod'
+	sudo restorecon /usr/loca/sbin/ergod
+
+next, copy the systemd unit file to the appropriate directory for
+systemd, and make a symbolic link in another appropriate location with:
+
+	sudo cp ergod.service /usr/lib/systemd/system
+	sudo ln -s /usr/lib/systemd/system/ergod.service etc/systemd/system/ergod.service
+
+and finally enable it and reload the daemons with:
+	
+	sudo systemctl enable ergod.service sudo systemctl daemon-reload
+

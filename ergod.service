@@ -3,4 +3,7 @@ Description=computer ergonomics daemon
 
 [Service]
 Type=simple
-ExecStart=.../ergod
+ExecStart=!/usr/local/sbin/ergod
+
+[Install]
+WantedBy=default.target
