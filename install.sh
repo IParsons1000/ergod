@@ -1,6 +1,6 @@
 #! /bin/bash
 # 
-#   (c)2022 Ira Parsons
+#   (c)2022-2025 Ira Parsons
 #   ergod - the computer ergonomics daemon
 # 
 
