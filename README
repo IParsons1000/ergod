@@ -1,24 +1,29 @@
+                          _
+  ___ _ __ __ _  ___   __| |
+ / _ \ '__/ _` |/ _ \ / _` |
+|  __/ | | (_| | (_) | (_| |
+ \___|_|  \__, |\___/ \__,_|
+          |___/
+
 ergod - the computer ergonomics daemon
 
 DESCRIPTION
 -----------
 
 ergod is a systemd daemon (service) designed to decrease eyestrain, by
-wall-ing all users every twenty minutes to remind themm to look away
+wall-ing all users every twenty minutes to remind them to look away
 from their computer.
 
 INSTALLATION
 ------------
 
 You can install with the installation script in this directory,
-install.sh or by hand.  See the`INSTALL' file in this directory for more
+`install.sh' or by hand.  See the`INSTALL' file in this directory for more
 info.
 
-CREDITS
--------
-
-See the `AUTHORS' file in this directory for authorship info and
-credits.
+ergod has been tested in Fedora 36 and later on x86_64 systems.  It should
+work for all systemd-based Linux distributions, but may require manual
+install.
 
 LICENSE
 -------

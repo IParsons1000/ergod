@@ -30,7 +30,7 @@ the file context to make it accessable by systemd:
 	sudo semanage fcontext -a -t bin_t -s system_u '/usr/local/sbin/ergod'
 	sudo restorecon /usr/loca/sbin/ergod
 
-next, copy the systemd unit file to the appropriate directory for
+Next, copy the systemd unit file to the appropriate directory for
 systemd, and make a symbolic link in another appropriate location with:
 
 	sudo cp ergod.service /usr/lib/systemd/system
@@ -40,3 +40,4 @@ and finally enable it and reload the daemons with:
 	
 	sudo systemctl enable ergod.service sudo systemctl daemon-reload
 
+Optionally, you may create and populate a configuration file, `/etc/ergod.conf'.

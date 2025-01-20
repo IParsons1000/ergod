@@ -1,12 +1,13 @@
 /*
  *
- *  (c)2022 Ira Parsons
+ *  (c)2022-2025 Ira Parsons
  *  ergod - the computer ergonomics daemon
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -17,9 +18,22 @@
 #include <syslog.h>
 #endif
 
-#define WAIT_TIME 1200
-#define OUTPUT_BIN "/bin/wall"
-#define OUTPUT_MSG "Time to look at something distant for 20 seconds!"
+char *CONFIGPATH = "/etc/ergod.conf";
+char *CONFIGRINT = "REMINDERINT";
+char *CONFIGRBIN = "REMINDERBIN";
+char *CONFIGRMSG = "REMINDERMSG";
+
+struct config_s;
+
+struct config_s {
+	int reminderinterval;
+	char *reminderbinary;
+	char *remindermessage;
+};
+
+struct config_s config;
+
+void parseconfig(void); /* Parse the configuration file. */
 
 void signal_handler(int signo){
 	
@@ -34,11 +48,11 @@ void signal_handler(int signo){
 	}
 	if(signo == SIGHUP){
 		#ifdef USE_SYSLOG
-		syslog(LOG_NOTICE, "Received SIGHUP");
+		syslog(LOG_NOTICE, "Received SIGHUP and reloaded configuration file");
 		#else
-		fprintf(stderr, SD_NOTICE "Received SIGHUP");
+		fprintf(stderr, SD_NOTICE "Received SIGHUP and reloaded configuration file");
 		#endif
-		sleep(WAIT_TIME);
+		parseconfig();
 		return;
 		/* Reload the config files. */
 	}
@@ -49,18 +63,16 @@ void signal_handler(int signo){
 
 int main(int argc, char* argv[]){
 
-	#ifdef USE_SYSLOG
 	if(argc == 1){
+	#if defined(USE_SYSLOG)
 		openlog("ergod", 0, LOG_DAEMON);
 		syslog(LOG_NOTICE, "Succesfully began execution");
-	}
 	#else
-	if(argc == 1){
 		fprintf(stderr, SD_NOTICE "Succesfully began execution");
-	}
 	#endif
+	}
 
-	int c;
+	register int c;
 	extern char *optarg;
 	extern int optind, optopt;
 
@@ -68,21 +80,21 @@ int main(int argc, char* argv[]){
 		switch(c){
 			case 'v':
 				if( access("/bin/cowsay", F_OK) == 0 ){
-					char* verargs[] = { "/bin/cowsay", "ergod - the computer ergonomics daemon v.0.1\nCopyright (c) 2022 Ira Parsons", 0 };
+					char* verargs[] = { "/bin/cowsay", "ergod - the computer ergonomics daemon v.0.2\nCopyright (c) 2022-2025 Ira Parsons", 0 };
 					execv(verargs[0], verargs);
 					break;
 				}
-				printf("ergod - the computer ergonomics daemon v.0.1\n");
-				printf("Copyright (c) 2022 Ira Parsons\n");
+				printf("ergod - the computer ergonomics daemon v.0.2\n");
+				printf("Copyright (c) 2022-2025 Ira Parsons\n");
 				exit(0);
 				break;
 			case 'h':
 				if( access("/bin/cowsay", F_OK) == 0 ){
-					char* helpargs[] = { "/bin/cowsay", "Send bug reports to: <irap@cox.net>", 0 };
+					char* helpargs[] = { "/bin/cowsay", "Usage: ergod [-vh]\n\nSee also: ergod(1)", 0 };
 					execv(helpargs[0], helpargs);
 					break;
 				}
-				printf("Send bug reports to: <irap@cox.net>\n");
+				printf("Usage: ergod [-vh]\nSee also: ergod(1)\n");
 				exit(0);
 				break;
 			case '?':
@@ -93,20 +105,25 @@ int main(int argc, char* argv[]){
 
 	signal(SIGTERM, signal_handler);
 	signal(SIGHUP, signal_handler);
+
+	config.reminderinterval = 1200;
+	config.reminderbinary = "/bin/wall";
+	config.remindermessage = "Time to look away from the screen for 20 seconds!";
+	parseconfig();
 	
-	char* message[] = { OUTPUT_BIN, OUTPUT_MSG, 0 };
+	char* reminderargs[] = { config.reminderbinary, config.remindermessage, 0 };
 	pid_t pid;
 
-	while(1){
+	for(;;){
 		
-		sleep(WAIT_TIME); /* Wait 20 minutes. */
+		sleep(config.reminderinterval); /* Wait 20 minutes. */
 		
 		pid = vfork();
 		
 		if(pid < 0){
 			/* Error forking. */
 			#ifdef USE_SYSLOG
-			syslog(LOG_ERROR, "Failed to fork");
+			syslog(LOG_PERROR, "Failed to fork");
 			#else
 			fprintf(stderr, SD_ERR "Failed to fork");
 			#endif
@@ -116,7 +133,7 @@ int main(int argc, char* argv[]){
 			waitpid(pid, &status, 0);
 		}
 		else{ /* We are the child: */
-			execv(message[0], message); /* Send a message to all users. */
+			execv(reminderargs[0], reminderargs); /* Send a message to all users. */
 			#ifdef USE_SYSLOG
 			syslog(LOG_INFO, "Succesfully notified user");
 			#else
@@ -131,5 +148,68 @@ int main(int argc, char* argv[]){
 	#endif
 	
 	return EXIT_SUCCESS;
+	
+}
+
+void parseconfig(){
+	
+	if(access(CONFIGPATH, F_OK) != 0){ /* If the file doesn't exist. */
+		#ifdef USE_SYSLOG
+		syslog(LOG_INFO, "No configuration file found");
+		#else
+		fprintf(stderr, SD_INFO "No configuration file found");
+		#endif
+		return;
+	}
+	
+	/* Otherwise: */
+	
+	FILE *configfile = fopen(CONFIGPATH, "r");
+	rewind(configfile);
+	
+	#ifdef USE_SYSLOG
+	syslog(LOG_INFO, "Opened configuration file");
+	#else
+	fprintf(stderr, SD_INFO "Opened configuration file");
+	#endif
+
+	char *workingentry = malloc(128);
+	char *workingvalue = malloc(256);
+	char *line = malloc(128+256);
+
+	while(fgets(line, 128+256, configfile)){
+		char *ptr = strchr(line, '=');
+		if(ptr != NULL){
+			*ptr++ = 0;
+			strcpy(workingentry, line);
+			strcpy(workingvalue, ptr);
+			#ifdef USE_SYSLOG
+			syslog(LOG_INFO, "Configuration option detected: %s=%s", workingentry, workingvalue);
+			#else
+			fprintf(stderr, SD_INFO "Configuration option detected: %s=%s", workingentry, workingvalue);
+			#endif
+			if(workingentry != NULL && !strcmp(workingentry, CONFIGRINT)){
+				config.reminderinterval = atoi(workingvalue);
+			};
+			if(workingentry != NULL && !strcmp(workingentry, CONFIGRBIN)){
+				config.reminderbinary = strdup(workingvalue);
+			};
+			if(workingentry != NULL && !strcmp(workingentry, CONFIGRMSG)){
+				config.remindermessage = strdup(workingvalue);
+			};
+		};
+	};
+
+	free(workingentry);
+	free(workingvalue);
+	free(line);
+
+	#ifdef USE_SYSLOG
+	syslog(LOG_INFO, "Finished parsing configuration file");
+	#else
+	fprintf(stderr, SD_INFO "Finished parsing configuration file");
+	#endif
+
+	fclose(configfile);
 	
 }

@@ -13,9 +13,10 @@ A SHORT DESCRIPTION OF ergod'S INTERNALS
 ergod is a systemd service, meaning that it is run in the background by
 systemd at startup.
 
-ergod consists of an infinite loop that waits twenty minutes, and then
-forks (actually vfork's for effeciency), execv's the `wall' command, and
-then exits back into the main program.
+ergod consists of an infinite loop that waits an interval (default twenty
+minutes), and then forks (actually vfork's for effeciency), execv's the
+specified (default `wall') command, and then exits back into the main
+program.
 
 ergod uses journal for logging by default, but can use syslog if
 compiled with -DUSE_SYSLOG. NOTE: ergod's journal logs can be viewed
