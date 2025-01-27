@@ -6,7 +6,9 @@ Anyone can hack ergod, as long as they follow the guidelines of the BSD
 distributing the modified version of ergod with the same license.
 
 To have your patch considered for inclusion, please send a diff output
-to the ergod maintainer (see the `AUTHORS' file in this directory).
+to the ergod maintainer, or submit a pull request on GitHub (be warned--
+the GitHub repo is a clone of a locally-hosted repo and I do not check it
+as regularly as my email).
 
 A SHORT DESCRIPTION OF ergod'S INTERNALS
 
